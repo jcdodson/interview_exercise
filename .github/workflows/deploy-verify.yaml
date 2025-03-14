@@ -1,0 +1,36 @@
+name: Deploy and Verify
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+
+      - name: Deploy to EC2
+        run: |
+          echo ${{ secrets.EC2_PRIVATE_KEY }} > private_key.pem
+          chmod 600 private_key.pem
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{EC2_USERNAME }}@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+            sudo docker stop apprenticeship_interview || true
+            sudo docker rm apprenticeship_interview || true
+            sudo docker run -d --name apprenticeship_interview -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+          EOF
