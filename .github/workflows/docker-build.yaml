@@ -29,4 +29,4 @@ jobs:
 
       - name: Run
         run: |
-          docker run -d -p 80:3000 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+          docker run -d -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
