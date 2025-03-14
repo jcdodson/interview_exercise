@@ -28,7 +28,7 @@ jobs:
         run: |
           echo ${{ secrets.EC2_PRIVATE_KEY }} > private_key.pem
           chmod 600 private_key.pem
-          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{EC2_USERNAME }}@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
             sudo docker stop apprenticeship_interview || true
             sudo docker rm apprenticeship_interview || true
