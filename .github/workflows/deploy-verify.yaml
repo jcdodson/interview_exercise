@@ -1,0 +1,69 @@
+name: Deploy and Verify
+
+on:
+  push:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update package.json with GitHub Run Number
+        run: |
+          jq --arg version "${{ github.run_number }}" '.version = $version' package.json > temp.json && mv temp.json package.json
+
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:${{ github.run_number }}
+          labels: |
+              version=${{ github.run_number }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            cd ~/app
+            
+            sudo -E DEPLOY_VERSION="${{ github.run_number }}" docker-compose down
+            sudo -E DEPLOY_VERSION="${{ github.run_number }}" docker-compose pull
+            sudo -E DEPLOY_VERSION="${{ github.run_number }}" docker-compose up -d --force-recreate
+
+      - name: Verify
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            DEPLOYED_VERSION=$(sudo docker ps --format '{{.Image}}' | awk -F ':' '{print $2}')
+            EXPECTED_VERSION="${{ github.run_number }}"
+
+            if [ "$DEPLOYED_VERSION" == "$EXPECTED_VERSION" ]; then
+              echo "Version match: $DEPLOYED_VERSION"
+            else
+              echo "Version mismatch! Expected $EXPECTED_VERSION, got $DEPLOYED_VERSION"
+              exit 1
+            fi

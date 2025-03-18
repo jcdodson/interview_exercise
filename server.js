@@ -14,7 +14,7 @@ const server = createServer((req, res) => {
   const curTime = Date.now();
   const resData = {message:"My name is Jacob Dodson",timestamp:curTime,version:ver};
 
-  res.end(JSON.stringify(resData));
+  res.end(JSON.stringify(resData, null, 0));
 });
 
 server.listen(port, hostname, () => {
