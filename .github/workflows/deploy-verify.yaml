@@ -58,21 +58,8 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            CONTAINER_ID=$(sudo docker ps -aqf "name=${{ secrets.DOCKER_HUB_REPO }}")
-
-            if [ -z "$CONTAINER_ID" ]; then
-              echo "No running container found"
-              sudo docker ps -a
-              exit 1
-            fi
-
-            echo "Found running container: $CONTAINER_ID"
-
             DEPLOYED_VERSION=$(sudo docker ps --format '{{.Image}}' | awk -F ':' '{print $2}')
             EXPECTED_VERSION="${{ github.run_number }}"
-
-            echo "Expected version: $EXPECTED_VERSION"
-            echo "Deployed version: $DEPLOYED_VERSION"
 
             if [ "$DEPLOYED_VERSION" == "$EXPECTED_VERSION" ]; then
               echo "Version match: $DEPLOYED_VERSION"
