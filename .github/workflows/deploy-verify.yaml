@@ -68,7 +68,7 @@ jobs:
 
             echo "Found running container: $CONTAINER_ID"
 
-            DEPLOYED_VERSION=$(sudo docker inspect ${{ secrets.DOCKER_HUB_REPO }} | jq -r '.[0].Config.Image' | cut -d ':' -f2)
+            DEPLOYED_VERSION=$(sudo docker ps --format '{{.Image}}' | awk -F ':' '{print $2}')
             EXPECTED_VERSION="${{ github.run_number }}"
 
             echo "Expected version: $EXPECTED_VERSION"
