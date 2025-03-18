@@ -26,8 +26,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:${{ github.sha }}
-          build-args: GIT_COMMIT_SHA=${{ github.sha }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:${{ github.run_number }}
+          labels: |
+              version=${{ github.run_number }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -47,8 +48,7 @@ jobs:
             sudo systemctl start docker || true
             sudo docker-compose down
             sudo docker-compose pull
-            sudo docker-compose up -d --force-recreate \
-              -e GIT_COMMIT_SHA=${{ github.sha }}
+            sudo docker-compose up -d --force-recreate
 
       - name: Verify
         uses: appleboy/ssh-action@v0.1.10
@@ -57,20 +57,25 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            CONTAINER_ID=$(sudo docker ps --format "{{.ID}}" | head -n 1)
-            echo "Checking environment variables inside container..."
-            sudo docker exec $CONTAINER_ID env | grep GIT_COMMIT_SHA || echo "GIT_COMMIT_SHA not found!"
-            DEPLOYED_SHA=$(sudo docker exec $CONTAINER_ID printenv GIT_COMMIT_SHA)
-            EXPECTED_SHA="${{ github.sha }}"
-      
-            if [ -z "$DEPLOYED_SHA" ]; then
-              echo "GIT_COMMIT_SHA is missing inside the container!"
+            CONTAINER_ID=$(sudo docker ps -aqf "name=${{ secrets.DOCKER_HUB_REPO }}")
+
+            if [ -z "$CONTAINER_ID" ]; then
+              echo "No running container found"
+              sudo docker ps -a
               exit 1
             fi
-      
-            if [ "$DEPLOYED_SHA" == "$EXPECTED_SHA" ]; then
-              echo "Version match: $DEPLOYED_SHA"
+
+            echo "Found running container: $CONTAINER_ID"
+
+            DEPLOYED_VERSION=$(sudo docker inspect --format '{{ index .Config.Labels "version" }}' "$CONTAINER_ID")
+            EXPECTED_VERSION="${{ github.run_number }}"
+
+            echo "Expected version: $EXPECTED_VERSION"
+            echo "Deployed version: $DEPLOYED_VERSION"
+
+            if [ "$DEPLOYED_VERSION" == "$EXPECTED_VERSION" ]; then
+              echo "Version match: $DEPLOYED_VERSION"
             else
-              echo "Version mismatch! Expected $EXPECTED_SHA, got $DEPLOYED_SHA"
+              echo "Version mismatch! Expected $EXPECTED_VERSION, got $DEPLOYED_VERSION"
               exit 1
             fi
