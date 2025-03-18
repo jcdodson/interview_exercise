@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -26,11 +26,20 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          echo ${{ secrets.EC2_PRIVATE_KEY }} > private_key.pem
+          cat <<EOF > private_key.pem
+          ${{ secrets.EC2_PRIVATE_KEY }}
+          EOF
           chmod 600 private_key.pem
+
           ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            set -e
+
             sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+
             sudo docker stop apprenticeship_interview || true
             sudo docker rm apprenticeship_interview || true
+
             sudo docker run -d --name apprenticeship_interview -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+
+            sleep 5
           EOF
