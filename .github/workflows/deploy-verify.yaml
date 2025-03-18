@@ -45,7 +45,7 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             cd ~/app
-            export DEPLOY_VERSION=${{ github.run_number }}
+            export DEPLOY_VERSION="${{ github.run_number }}"
             
             sudo docker-compose down
 
