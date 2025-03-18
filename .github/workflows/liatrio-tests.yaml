@@ -23,5 +23,4 @@ jobs:
           sleep 5
 
       - name: Run Liatrio Tests
-        uses: liatrio/github-actions/apprentice-action@master
-        continue-on-error: true
+        uses: liatrio/github-actions/apprentice-action@0b41561cca6822cc8d880fe0e49e7807a41fdf91
