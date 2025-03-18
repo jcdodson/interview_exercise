@@ -58,9 +58,16 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
             CONTAINER_ID=$(sudo docker ps --format "{{.ID}}")
+            echo "Checking environment variables inside container..."
+            sudo docker exec $CONTAINER_ID env | grep GIT_COMMIT_SHA || echo "GIT_COMMIT_SHA not found!"
             DEPLOYED_SHA=$(sudo docker exec $CONTAINER_ID printenv GIT_COMMIT_SHA)
             EXPECTED_SHA="${{ github.sha }}"
-
+      
+            if [ -z "$DEPLOYED_SHA" ]; then
+              echo "GIT_COMMIT_SHA is missing inside the container!"
+              exit 1
+            fi
+      
             if [ "$DEPLOYED_SHA" == "$EXPECTED_SHA" ]; then
               echo "Version match: $DEPLOYED_SHA"
             else
