@@ -38,10 +38,8 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
-
-            sudo docker stop apprenticeship_interview || true
-            sudo docker rm apprenticeship_interview || true
-            
-            sudo docker run -d --name apprenticeship_interview -p 80:80 \
-              ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+            cd ~/app
+            sudo systemctl start docker || true
+            sudo docker-compose down
+            sudo docker-compose pull
+            sudo docker-compose up -d --force-recreate
