@@ -1,6 +1,6 @@
 {
   "name": "exp_proj",
-  "version": "Local",
+  "version": "Dev",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

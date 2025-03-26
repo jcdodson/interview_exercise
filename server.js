@@ -12,7 +12,7 @@ const server = createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   const curTime = Date.now();
-  const resData = {message:"My name is Jacob Dodson.",timestamp:curTime,version:ver};
+  const resData = {message:"My name is Jacob Dodson",timestamp:curTime,version:ver};
 
   res.end(JSON.stringify(resData, null, 0));
 });
